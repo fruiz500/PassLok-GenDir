@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml" manifest="lockdir.appcache">
+<!--page head stuff. Makes sure it looks nice on mobile devices-->
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>PassLok general directory</title>
+    <meta name="Keywords" content="passlok, URSA, browser, encryption, decryption, symmetric, public key, signature, AES, ECDH, Diffie, Hellman, elliptic curve, advanced, javascript, PGP, PRISM">
+    <meta name="Description" content="PassLok privacy">
+    <meta name="author" content="W. Huang, F. Ruiz">
+    <meta name="robots" content="index">
+    <meta name="viewport" content="width=device-width, minimum-scale=1, maximum-scale=1, user-scalable=no">	
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<head> 
+
+<style type="text/css">
+	html {
+	   -webkit-text-size-adjust: 100%;
+	}
+	body {
+		font-family: Sans-Serif;
+		margin-left: 1%;
+		margin-right: 1%;
+		background-color: #FFFFFF;
+		color: #000000;
+		overflow: auto;
+	}
+.cssbutton {
+	background:-webkit-gradient( linear, left top, left bottom, color-stop(0.05, #e6e6e6), color-stop(1, #e6e6e6) );
+	background:-moz-linear-gradient( center top, #e6e6e6 5%, #e6e6e6 100% );
+	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#e6e6e6', endColorstr='#e6e6e6');
+	background-color:#e6e6e6;
+	-webkit-border-radius: 0;
+  	-moz-border-radius: 0;
+	text-indent:0;
+	border:1px solid #dcdcdc;
+	display:inline-block;
+  	border-radius: 0;
+  	font-family: Arial;
+	font-size:18px;
+  	color: #666666;
+  	padding: 12px;
+	font-style:normal;
+	text-decoration:none;
+	text-align:center;
+	border:0px;
+	margin-right: -2px;
+}
+.cssbutton:hover {
+	background:-webkit-gradient( linear, left top, left bottom, color-stop(0.05, #efefef), color-stop(1, #efefef) );
+	background:-moz-linear-gradient( center top, #efefef 5%, #efefef 100% );
+	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#efefef', endColorstr='#efefef');
+	background-color:#efefef;
+}
+.cssbutton:active {
+	position:relative;
+	top:1px;
+}
+.cssbox {
+	-webkit-border-radius: 0;
+  	-moz-border-radius: 0;
+  	border-radius: 0;
+	font-size:18px;
+  	color: #666666;
+  	padding: 15px;
+  	background: #fff0ea;
+  	text-decoration: none;
+	border:1px solid #dedede;
+	width: 100%;
+	-webkit-appearance: none;
+    box-sizing: border-box;
+    -webkit-box-sizing:border-box;
+    -moz-box-sizing: border-box;
+	-webkit-box-shadow: none;
+	-moz-box-shadow: none;
+	box-shadow: none;
+}
+</style>
+   
+<script>    
+    if (window.location.protocol == "http:") {				//force SSL/TLS
+
+        var restOfUrl = window.location.href.substr(5);
+        window.location = "https:" + restOfUrl;
+    }
+
+//to select text in Lock box	
+function selectLock(){
+	document.getElementById('lockBox').selectionStart=0;
+	document.getElementById('lockBox').selectionEnd=document.getElementById('lockBox').value.length;
+}
+
+<!-- Text hide trick, by Sandeep Gangadharan 2005-->
+if (document.getElementById) {
+ document.writeln('<style type="text/css"><!--')
+ document.writeln('.texter {display:none} @media print {.texter {display:block;}}')
+ document.writeln('//--></style>') }
+
+function openClose(theID) {
+ if (document.getElementById(theID).style.display === "block") { document.getElementById(theID).style.display = "none" }
+ else { document.getElementById(theID).style.display = "block" }
+};
+// end of hide trick
+
+//this is for showing an authenticating video, whose URL is by itself or on the line below a Lock
+function playVideo(){
+	var boxSplit = document.getElementById('lockBox').value.trim().split('\n');
+	var video = boxSplit[boxSplit.length - 1].trim();
+	if(video.slice(0,4).toLowerCase()=='http'){
+		if (document.getElementById("learnmode").checked){
+			var reply = confirm("A new tab will open to play the video attached to the Lock. Cancel if this is not what you want.");
+			if(!reply) throw("play video canceled");
+		}
+		openWindow(video);	
+	} else {
+		document.getElementById('servermsg').innerHTML = "<span style='color:red;'>No valid video address found</span>"
+	}
+}
+
+//for opening videos. Works on mobile devices
+function openWindow(URL){
+		var downloadLink = document.createElement("a");
+		downloadLink.target = '_blank';		
+		//	instead of window.open(video), which doesn't work on mobile, do a downloadLink.click()
+		if (window.webkitURL != null)
+			{
+		// Chrome allows the link to be clicked
+		// without actually adding it to the DOM.
+			downloadLink.href = URL;
+		} else {
+		// Firefox requires the link to be added to the DOM
+		// before it can be clicked.
+			downloadLink.href = URL;
+			downloadLink.onclick = destroyClickedElement;
+			downloadLink.style.display = "none";
+			document.body.appendChild(downloadLink);
+		}
+		downloadLink.click();	
+}
+
+//this one prepares an email with the default client to invite someone to PassLok and upload their Lock
+function inviteMail(){
+	if (document.getElementById("learnmode").checked){
+		var reply = confirm("A new tab will open with a pre-formatted email to this address, inviting the owner to download PassLok and giving instructions on how to add a Lock to the general directory. Cancel if this is not what you want.");
+		if(!reply) throw("invite email canceled");
+	}
+    var link = "mailto:" + document.getElementById('emailBox').value.trim() + "?subject=Invitation to PassLok privacy" + "&body=%0D%0A%0D%0AI want to send you a message locked with PassLok, but I could not find your personal Lock in the general PassLok directory.%0D%0A%0D%0AYou can get PassLok at https://passlok.com%0D%0A%0D%0AYou will be asked to come up with a secret Key, from which a Lock is then made, and then you can send me that Lock anyway you want.%0D%0A%0D%0ATo post the Lock on the general directory, go to the Directory tab in PassLok and then click the General Directory button. Write your email in the top box of the new screen that will open and click 'Post'. Your Lock will be available to everyone after you click the link in an email confirmation.";
+	
+	if(typeof window.orientation !== 'undefined'){ 	 								//new window for PC, same window for mobile
+		window.open(link,"_parent")
+	} else {
+		window.open(link,"_blank")
+	}
+}
+
+//strips tags and videos from Locks
+function striptags(string){
+	string = string.replace(/\s/g,'');															//remove spaces
+	string = string.split("=").sort(function (a, b) { return b.length - a.length; })[0];		//remove tags								
+	string = string.replace(/[^a-zA-Z0-9+/ ]+/g, ''); 											//takes out anything that is not base64
+	return string
+}
+
+//checks that the contents are correctly formatted for a Lock before submitting to the server
+function submitIt(){
+	var string = document.getElementById('lockBox').value,
+		email = document.getElementById('emailBox').value.trim(),
+		atpos = email.indexOf("@"),
+		dotpos = email.lastIndexOf(".");
+	if (atpos<1 || dotpos<atpos+2 || dotpos+2>=email.length)										//email format check, for browsers that don't do it automatically
+  	{
+  		document.getElementById('servermsg').innerHTML = "<span style='color:red;'>Invalid email address</span>";
+  		return false
+  	}	
+	if (string == 'Remove'){
+		return confirm('If you go ahead, the PassLok directory entry for this address will be removed, after email confirmation.');
+	}
+	if (striptags(string).length == 87 || striptags(string).length == 100 || striptags(string).length == 43 || striptags(string).length == 50){
+		return confirm('If you go ahead, the PassLok directory entry for this address will be changed to match the contents of the lower box, after email confirmation.')
+	} else {
+		document.getElementById('servermsg').innerHTML = "<span style='color:red;'>No valid Lock found</span>";
+		return false
+	}
+}
+
+//searches for a Lock on the server
+function showLock(str){
+	if (document.getElementById("learnmode").checked){
+		var reply = confirm("The email in the top box will be used to search for a matching Lock in the directory. Cancel if this is not what you want.");
+		if(!reply) throw("Lock search canceled");
+	}
+	var servermsg = document.getElementById("servermsg");
+	var oldLock = striptags(document.getElementById("lockBox").value);
+  if(str==""){
+    document.getElementById("lockBox").value = "";
+	servermsg.innerHTML = 'Nothing to search.';
+    return;
+  }
+  if(window.XMLHttpRequest){
+    xmlhttp = new XMLHttpRequest();
+  }else{
+    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+  }
+  xmlhttp.onreadystatechange=function(){
+    if(xmlhttp.readyState == 4 && xmlhttp.status == 200){
+		var serverLock = xmlhttp.responseText.trim();
+		if (serverLock != ''){
+      		document.getElementById("lockBox").value = xmlhttp.responseText.trim();
+			if(striptags(document.getElementById("lockBox").value) == oldLock){	//same Lock as previously displayed
+				servermsg.innerHTML = '<span style="color:green">The Lock in the directory is the same you input.</span>';
+				return
+			}
+			servermsg.innerHTML = 'Lock found for this email. Select & Copy.';
+			window.parent.postMessage(serverLock, '*');								//so main program gets the Lock, too
+		} else {
+			document.getElementById("lockBox").value = '';
+			servermsg.innerHTML = 'No Lock found for this email. You may want to invite this person by clicking the <strong>Invite</strong> button below.'
+		}
+	}
+  }
+  xmlhttp.open("GET","lockdir.php?request_email="+str,true);
+  xmlhttp.send();
+}
+
+//for getting Lock from main program and getting it ready to post
+function receiveMessage(evt){
+	if (document.getElementById("emailBox").value == ''){
+		if(striptags(evt.data).length == 87 || striptags(evt.data).length == 100 || striptags(string).length == 43 || striptags(string).length == 50){
+			document.getElementById("lockBox").value = evt.data;
+			document.getElementById("servermsg").innerHTML='This is your Lock. Add your email to check it or post it.'
+		}
+	}
+}
+</script>
+</head>
+
+<body>
+<!--This div contains the user input and its buttons-->     
+<div id="lockserver" class="texter" style="display: block;" align="center">
+ 		<form id="mainForm" name="mainForm" method="post" action="lockdir.php" onSubmit="return submitIt();">
+    	<span id="servermsg"><strong>PassLok general directory</strong></span><br />
+        
+      <h3>email address</h3>
+    	<input type="email" class="cssbox" name="update_email" id="emailBox" onKeyPress="return event.keyCode!=13" onKeyDown="" onKeyUp="this.value = this.value.toLowerCase();if (event.keyCode == 13) showLock(this.value.trim());" style="width: 92%" placeholder="Email associated with the Lock." />
+        
+      <h3>Lock/video</h3>
+      	<input type="button" class = "cssbutton" onClick="showLock(document.getElementById('emailBox').value.trim());" value="Find" title="search the directory for a Lock for the email in the upper box"><!--
+
+    --><input type="submit" class = "cssbutton" value="Post" title="update the Lock posted under the address in the upper box (email confirmation required)"><!--
+        
+     --><input type="button" class = "cssbutton" onClick="selectLock();" value="Select" title="select the lower box contents"><!--
+        
+     --><input type="button" class = "cssbutton" onClick="document.getElementById('emailBox').value='';document.getElementById('lockBox').value='';document.getElementById('servermsg').innerHTML=''" value="Clear" title="clear both boxes">
+
+		  <textarea class="cssbox" name="update_lock" id="lockBox" style="width: 96%" rows="6" placeholder="Enter your Lock plus optional video address here."></textarea><br />
+   
+        <input type="button" class = "cssbutton" onclick = "openClose('lockserver');openClose('serverhelp');" value="Help" style="color: #009400" title="help on general directory"><!--
+  
+      --><input type="button" class = "cssbutton" onClick="playVideo();" value="Play" title="open a new tab playing the video attached to the Lock"><!--
+
+  	  --><input type="button" class = "cssbutton" onClick="inviteMail();" value="Invite" title="open the default email client with a preformatted message inviting the address above to PassLok"><!--
+
+	  --><input type="submit" class = "cssbutton" onClick="document.getElementById('lockBox').value='Remove';" value="Remove" title="remove the entry associated with the address in the upper box (email confirmation required)">
+        
+	  </form>
+
+    <div align="left" style="width:98%">
+        <p><strong style="color:red;">Warning:</strong> Locks submitted to the directory are verified only by email, <strong>which can be faked</strong> by anyone with access to servers.</p>
+        <p><strong>You should authenticate your Lock by adding a video on the line below it</strong> as described in the Help page. Those fetching someone's Lock <strong>should make sure it is authentic</strong> by watching the video.</p>
+    <p>To get information on every button as you press it, check this box: <strong> Learn Mode <input type="checkbox" id="learnmode" title="get explanatory messages after buttons are pressed, but before functions are executed"/></strong></p>
+    </div>
+    <div onClick="openClose('a7')" align="left" style="width:98%;cursor:pointer">
+<strong><em>Click here for Privacy Policy</em></strong>  
+</div>
+  <div id="a7" class="texter" align="left" style="display:none;width:98%">
+<p>The General Directory is a page separate from the PassLok privacy app. Unlike PassLok, which does not communicate with servers after it is loaded and can run offline, the directory does talk to a server and needs an Internet connection. Still, your privacy is assured:</p>
+<p>1. The PassLok general directory stores nothing private. It only stores Locks, which are public by their very nature, and email addresses.</p>
+<p>2. Email addresses are used for the sole purpose of identifying Locks. For security reasons, submitting, updating, or removing a Lock involves replying to a confirmation email, and after this you will not get any more emails from us for six months. If you have a Lock posted, the directory will send you a confirmation email every six months so your Lock can remain posted.</p>
+<p>3. Needless to say, we will never give the emails collected in the server to a third party, private or public, other than by the regular search capability of the directory. Our server is set up so anyone trying to make a list of posted Locks will be denied access.</p>
+  </div>
+
+</div>
+<!--The following is a help page, which will normally be invisible unless the user clicks the Help button-->
+
+<div id="serverhelp" class="texter" style="display: none;">
+ 	<button class = "cssbutton" onclick = "openClose('serverhelp');openClose('lockserver');" value="< Back" style="" title="return to general directory">&#x25C0; Back to directory</button>      
+	<p>For instructions on how to do things, click on each title below. Click again to hide.</p>
+    <p>A lot of this is explained in this video tutorial: <a href="https://www.youtube.com/watch?v=1UQw7MaK3T8" target="_blank">https://www.youtube.com/watch?v=1UQw7MaK3T8</a></p>
+    <hr style="background-color: #c0c0c0">
+    
+    <div onClick="openClose('a1')" style="cursor:pointer">
+	<h3>Search for someone's Lock</h3>
+    </div>
+    <div id="a1" class="texter">
+<p>1. Enter the Lock owner's email address in the <strong>email address</strong> field </p>
+<p>2. Click the <strong>Find</strong> button. The Lock will show on the <strong>Lock/video</strong> field</p>
+<p>If a video  to authenticate the Lock is available, the address will show 
+  below the Lock. Press the <strong>Play</strong> button to play the video in a new tab. </p></div>
+	<hr style="background-color: #c0c0c0">
+
+    <div onClick="openClose('a2')" style="cursor:pointer">
+<h3>Submit my Lock to the directory, or update it if it has changed</h3>  
+</div>
+      <div id="a2" class="texter">
+<p>1. Type your email address in the <strong>email address</strong> field </p>
+<p>2. Paste your Lock in the <strong>Lock/video</strong> field. </p>
+<p> &emsp; &emsp;2.1. Add the address of your video, if you have one, in the line below the Lock. </p>
+<p>3. Click the <strong>Post</strong> button. A window will pop up verifying you want to post or update your Lock. </p>
+<p>4. Click <strong>OK</strong> if you want to post it or <strong>Cancel</strong> if you don't.</p>
+<p>5. An email will be sent to you verifying your information. 
+Click the link contained in the email to finally post your lock in the General Directory.</p> 
+  </div>
+ 	<hr style="background-color: #c0c0c0">
+    
+    <div onClick="openClose('a3')" style="cursor:pointer">
+<h3>Add a video to my Lock</h3>  
+</div>
+      <div id="a3" class="texter">
+<p>1. Type your email address in the <strong>email address</strong> field.</p>
+<p>2. Click the <strong>Find</strong> button. Your Lock should display in the <strong>Lock/video</strong> field?.</p>
+<p>3. Type the video address in the line below your Lock, then click <strong>Post</strong>. </p>
+<p>4. A message will pop confirming you want to update your lock. Click <strong>OK</strong>. </p>
+<p>5. An email will be sent to you. Click the link in your email to add the video to your Lock.</p>
+<div onClick="openClose('b3')" style="cursor:pointer">
+<p> <em>Click here to learn why a video</em></p> 
+</div>
+<div id="b3" class="texter">
+<p> Anyone with access to the email servers could intercept the confirmation emails and thus replace
+your Lock with a counterfeit Lock. This in turn would allow them to read your locked messages. Therefore,
+it is a very good idea to make an authenticating video soon after you make a new Lock, and post it on
+the directory so others can watch it and verify that the Lock in the directory is authentic. </p>
+</div>
+</div>
+ 	<hr style="background-color: #c0c0c0">
+        
+    <div onClick="openClose('a4')" style="cursor:pointer">
+<h3>Make an authenticating video</h3>  
+</div>
+  <div id="a4" class="texter">
+<p>1. Make sure the camera is looking at your face.</p>
+<p>2. You should first identify yourself (name, title, other). </p>
+<p>3. Next read outloud your Lock (the first 15 characters is enough). You can also type your Lock on a sheet of paper and display it during the video.</p>
+<p>4. We recommend that you play some background music while you are
+reading /displaying your Lock. This will make it harder to tamper with the video.</p>
+<p>5. Upload the video to the Internet (YouTube, Vimeo, etc.).</p>
+<p>6. Copy the address and post it together with your Lock .</p>
+  </div>
+ 	<hr style="background-color: #c0c0c0">
+    
+    <div onClick="openClose('a5')" style="cursor:pointer">
+<h3>Invite someone to submit his/her Lock to the directory</h3>  
+</div>
+  <div id="a5" class="texter">
+<p>1. Type the email address of the person you want to invite into the <strong>email address</strong> field.</p>
+<p>2. Click the <strong>Invite</strong> button. This will open your default email with a pre-formatted message showing
+instructions (you can edit them if you want). </p>
+<p>3. Click <strong>Send</strong>. Note: the email will come from you, not from PassLok. </p>      
+      </div>
+ 	<hr style="background-color: #c0c0c0">
+    
+    <div onClick="openClose('a6')" style="cursor:pointer">
+<h3>Remove my Lock from the directory</h3>  
+</div>
+  <div id="a6" class="texter">
+<p>1. Type your email address in the <strong>email address</strong> field and click <strong>Remove</strong>. </p>
+<p>2. A window will pop up to confirm you want to remove your Lock from the General Directory.</p>
+<p>3. Click <strong>OK</strong> if you do want to remove it. </p>
+<p>4. An email will be sen to you, so you can confirm the removal of your Lock.</p>
+<p>5. Click on the link in the email to finally remove your Lock, and video if there was one.</p>      
+  </div>
+<hr style="background-color: #c0c0c0">
+
+	<address>
+	PassLok general directory v1.8.03 &#169; F. Ruiz, W. Huang 2015
+	</address>
+    <ul>
+	<li>
+	PHP coding by W. Huang 2014
+	</li>
+    <li>
+    Interface by F. Ruiz 2014</li>
+    <li>Help by L. Lopez and G. Rupp 2014</li>
+    </ul>
+ 	<hr style="background-color: #c0c0c0">
+ 	<button class = "cssbutton" onclick = "openClose('serverhelp');openClose('lockserver');" value="< Back" title="return to general directory">&#x25C0; Back</button>   
+</div>
+
+<script>
+window.onload = function() {
+	window.addEventListener('message', receiveMessage, false);
+	document.getElementById('emailBox').focus()
+}
+</script>
+</body>
+</html>

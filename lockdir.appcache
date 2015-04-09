@@ -1,0 +1,9 @@
+CACHE MANIFEST 
+# last edited for v1.8.03
+
+CACHE:
+index.html
+favicon.ico
+
+NETWORK:
+*
