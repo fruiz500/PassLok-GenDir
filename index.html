@@ -224,7 +224,7 @@ function showLock(str){
 //for getting Lock from main program and getting it ready to post
 function receiveMessage(evt){
 	if (document.getElementById("emailBox").value == ''){
-		if(striptags(evt.data).length == 87 || striptags(evt.data).length == 100 || striptags(string).length == 43 || striptags(string).length == 50){
+		if(striptags(evt.data).length == 87 || striptags(evt.data).length == 100 || striptags(evt.data).length == 43 || striptags(evt.data).length == 50){
 			document.getElementById("lockBox").value = evt.data;
 			document.getElementById("servermsg").innerHTML='This is your Lock. Add your email to check it or post it.'
 		}
