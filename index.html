@@ -174,7 +174,7 @@ function submitIt(){
 	if (string == 'Remove'){
 		return confirm('If you go ahead, the PassLok directory entry for this address will be removed, after email confirmation.');
 	}
-	if (striptags(string).length == 87 || striptags(string).length == 100 || striptags(string).length == 43 || striptags(string).length == 50){
+	if (striptags(string).length == 43 || striptags(string).length == 50){
 		return confirm('If you go ahead, the PassLok directory entry for this address will be changed to match the contents of the lower box, after email confirmation.')
 	} else {
 		document.getElementById('servermsg').innerHTML = "<span style='color:red;'>No valid Lock found</span>";
@@ -224,7 +224,7 @@ function showLock(str){
 //for getting Lock from main program and getting it ready to post
 function receiveMessage(evt){
 	if (document.getElementById("emailBox").value == ''){
-		if(striptags(evt.data).length == 87 || striptags(evt.data).length == 100 || striptags(evt.data).length == 43 || striptags(evt.data).length == 50){
+		if(striptags(evt.data).length == 43 || striptags(evt.data).length == 50){
 			document.getElementById("lockBox").value = evt.data;
 			document.getElementById("servermsg").innerHTML='This is your Lock. Add your email to check it or post it.'
 		}
@@ -370,7 +370,7 @@ instructions (you can edit them if you want). </p>
 <hr style="background-color: #c0c0c0">
 
 	<address>
-	PassLok general directory v1.8.03 &#169; F. Ruiz, W. Huang 2015
+	PassLok general directory v1.8.4 &#169; F. Ruiz, W. Huang 2015
 	</address>
     <ul>
 	<li>
