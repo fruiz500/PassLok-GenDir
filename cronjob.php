@@ -28,7 +28,7 @@
 	
 	define("STATUS","ON");
 	
-	//Database conf. ACTUAL DATA HAVE BEEN REDACTED
+	//Database conf. ACTUAL DATA HAS BEEN REDACTED
 	$db_addr="REDACTED";
 	$db_name="REDACTED";
 	$db_uName="REDACTED";
@@ -46,40 +46,40 @@
 	}
 	
 	//connect to mySQL database
-	$con = mysql_connect($db_addr,$db_uName,$db_passwd);
-	mysql_select_db($db_name,$con);
+	$con = mysqli_connect($db_addr,$db_uName,$db_passwd,$db_name);
+//	mysqli_select_db($db_name,$con);
 
 
 /* Unities*/
-	mysql_query("DELETE FROM `AntiRobot`",$con);//refresh the antiRobot list and unlock the ip
+	mysqli_query($con,"DELETE FROM `AntiRobot`");//refresh the antiRobot list and unlock the ip
 	
 /* send email */
 
 	
 	//$log = fopen("log.txt","a+");
 	
-	$resultDelete=mysql_query("SELECT * FROM `Lock` WHERE `date`< now() - interval 187 day ",$con);
+	$resultDelete=mysqli_query($con,"SELECT * FROM `Lock` WHERE `date`< now() - interval 187 day ");
 	echo "<br>";
 	echo "<h3>Old lock deleted!</h3>";
-	while($row = mysql_fetch_array($resultDelete)){
+	while($row = mysqli_fetch_array($resultDelete)){
 		$email = $row['email'];
 		$lock = $row['lock'];
 		$url = $row['url'];
 		sendEmailOld($email,$url,$lock,"remove");
-		mysql_query("DELETE FROM `Lock` WHERE `email`='$email'",$con) or die(mysql_error($con));
+		mysqli_query($con,"DELETE FROM `Lock` WHERE `email`='$email'") or die(mysqli_error($con));
 		echo $email." has been deleted!<br>";
 	}
 	
-	$resultEmail=mysql_query("SELECT * FROM `Lock` WHERE `date`< now() - interval 180 day AND `is_activite` = 1",$con);// 6 month
+	$resultEmail=mysqli_query($con,"SELECT * FROM `Lock` WHERE `date`< now() - interval 180 day AND `is_activite` = 1");// 6 month
 	echo "<br>";
 	echo "<h3>Old lock needs to be confirmed</h3>";
-	while($row = mysql_fetch_array($resultEmail)){
+	while($row = mysqli_fetch_array($resultEmail)){
 		$email = $row['email'];
 		$lock = $row['lock'];
 		if($row['need_confirm']==0){
 			$url = md5($email."=>".time());
 			$url="REF-".$url;
-			mysql_query("UPDATE `Lock` SET `url`='$url', `future_lock` = `lock`, `need_confirm`=1, `confirm_date`=CURRENT_TIMESTAMP WHERE `email`='$email'") or die(mysql_error($con));
+			mysqli_query($con,"UPDATE `Lock` SET `url`='$url', `future_lock` = `lock`, `need_confirm`=1, `confirm_date`=CURRENT_TIMESTAMP WHERE `email`='$email'") or die(mysqli_error($con));
 		}else{
 			$url = $row['url'];
 			echo $email." old url!<br>";
@@ -87,25 +87,25 @@
 		sendEmailOld($email,$url,$lock,"refresh");
 		echo $email." needs to be refreshed! Email sent!<br>";	
 	}
-	$resultCancelChange=mysql_query("SELECT * FROM `Lock` WHERE `confirm_date` < now() - interval 10 day and `need_confirm` = 1",$con);//cancel the update or register
+	$resultCancelChange=mysqli_query($con,"SELECT * FROM `Lock` WHERE `confirm_date` < now() - interval 10 day and `need_confirm` = 1");//cancel the update or register
 	echo "<br>";
 	echo "<h3>Lock will not change</h3>";
-	while($row = mysql_fetch_array($resultCancelChange)){
+	while($row = mysqli_fetch_array($resultCancelChange)){
 		$email = $row['email'];
 		$lock = $row['lock'];
 		$url = $row['url'];
 		if($row['is_activite']==0){
-			mysql_query("DELETE FROM `Lock` WHERE `email`='$email'",$con);
+			mysqli_query($con,"DELETE FROM `Lock` WHERE `email`='$email'");
 		}else{
-			mysql_query("UPDATE `Lock` SET `need_confirm` = 0 WHERE `email`='$email'",$con);
+			mysqli_query($con,"UPDATE `Lock` SET `need_confirm` = 0 WHERE `email`='$email'");
 		}
 		sendEmailOld($email,$url,$lock,"cancelChange");
 		echo $email." needs to be confirmed!</br>";
 	}
-	$resultNew=mysql_query("SELECT * FROM `Lock` WHERE `confirm_date` < now() - interval 2 day and `need_confirm` = 1",$con);//confirm date before two days ago
+	$resultNew=mysqli_query($con,"SELECT * FROM `Lock` WHERE `confirm_date` < now() - interval 2 day and `need_confirm` = 1");//confirm date before two days ago
 	echo "<br>";
 	echo "<h3>Lock needs to be confirmed</h3>";
-	while($row = mysql_fetch_array($resultNew)){
+	while($row = mysqli_fetch_array($resultNew)){
 		$email = $row['email'];
 		$lock = $row['lock'];
 		$url = $row['url'];

@@ -51,8 +51,8 @@
 	}
 	
 	//connect to mySQL database
-	$con = mysql_connect($db_addr,$db_uName,$db_passwd);
-	mysql_select_db($db_name,$con);
+	$con = mysqli_connect($db_addr,$db_uName,$db_passwd,$db_name);
+//	mysql_select_db($db_name,$con);
 	antiRobotCheck($con);
 	//judge which action we need to handle
 	if(isset($_GET['request_email']))
@@ -97,11 +97,11 @@ function handleRequest($con){
 		antiRobotError($con);
 		return;
 	}	
-	$email = xss_clean($email);
-	$result = mysql_query("SELECT * FROM  `Lock` WHERE `email`='$email'",$con) or die(mysql_error($con));
-	$row=mysql_fetch_array($result);
+	$email = xss_clean($con,$email);
+	$result = mysqli_query($con,"SELECT * FROM  `Lock` WHERE `email`='$email'") or die(mysqli_error($con));
+	$row=mysqli_fetch_array($result);
 	$isgood = ($row['is_activite']==1);	
-//	mysql_time($email,$con);
+//	mysqli_time($email,$con);
 	if($isgood)
 		echo $row['lock'];
 	else
@@ -114,23 +114,23 @@ function handleUpdate($con){
 	if(empty($email)||empty($lock)){antiRobotError($con);return;}	
 	
 	//xss filter
-	$email = xss_clean($email);
-	$lock  = xss_clean($lock);	
+	$email = xss_clean($con,$email);
+	$lock  = xss_clean($con,$lock);	
 	
 	if(is_exist($email,$con)){
 		if($lock=="Remove"){
 			$url = md5($email."=>".time());
 			$url = "DEL-".$url;
-			mysql_query("UPDATE `Lock` SET `url`='$url',`need_confirm`=1, `confirm_date`=CURRENT_TIMESTAMP WHERE `email`='$email'") or die(mysql_error($con));
+			mysqli_query($con,"UPDATE `Lock` SET `url`='$url',`need_confirm`=1, `confirm_date`=CURRENT_TIMESTAMP WHERE `email`='$email'") or die(mysqli_error($con));
 			sendEmail($email,$url,$lock);
 			say("Email confirmation sent!");
 			say("You should be getting an email from PassLok privacy shortly. The email contains a link that you must click in order to confirm the removal of your Lock");
 		}else{
-			mysql_update($email,"after",$con,$lock);
+			mysqli_update($email,"after",$con,$lock);
 			$url = md5($email."=>".time());
 			$url = "UPD-".$url;
-			mysql_query("UPDATE `Lock` SET `url`='$url',`is_activite`=1, `need_confirm`=1, `confirm_date`=CURRENT_TIMESTAMP WHERE `email`='$email'") or die(mysql_error($con));
-			mysql_time($email,$con);
+			mysqli_query($con,"UPDATE `Lock` SET `url`='$url',`is_activite`=1, `need_confirm`=1, `confirm_date`=CURRENT_TIMESTAMP WHERE `email`='$email'") or die(mysqli_error($con));
+			mysqli_time($email,$con);
 			sendEmail($email,$url,$lock);
 			say("Email confirmation sent!");
 			say("You should be getting an email from PassLok privacy shortly. The email contains a link that you must click in order to finish updating the directory entry for your Lock.");
@@ -149,15 +149,14 @@ function handleRegister($con){
 	if(empty($email)||empty($lock))return;
 	
 	//xss filter
-	$email = xss_clean($email);
-	$lock  = xss_clean($lock);
-	
+	$email = xss_clean($con,$email);
+	$lock  = xss_clean($con,$lock);
 	$url = md5($email."=>".time());
 	$url = "REG-".$url;
 	
-	mysql_query("DELETE FROM `Lock` WHERE `email`='$email' and `is_activite`=0",$con);
+	mysqli_query($con,"DELETE FROM `Lock` WHERE `email`='$email' and `is_activite`=0");
 	
-	mysql_query("
+	mysqli_query($con,"
 		INSERT INTO `Lock`(
 		`email`,
 		`future_lock`,
@@ -170,7 +169,7 @@ function handleRegister($con){
 		VALUES(
 		'$email','$lock',CURRENT_TIMESTAMP,'$url',0,1,CURRENT_TIMESTAMP
 		);
-	",$con) or die(mysql_error($con));
+	") or die(mysqli_error($con));
 	sendEmail($email,$url,$lock);
 	say("Email confirmation sent!");
 	say("You should be getting an email from PassLok privacy shortly. The email contains a link that you must click in order to finish registering your Lock.");
@@ -186,33 +185,33 @@ function handleConfirm($con){
 		antiRobotError($con);
 		return;
 	}
-	$url = xss_clean($url);
-	$result = mysql_query("SELECT * FROM  `Lock` WHERE `url`='$url'",$con) or die(mysql_error($con));
-	if(mysql_num_rows($result)>0){
-		$row = mysql_fetch_array($result);
+	$url = xss_clean($con,$url);
+	$result = mysqli_query($con,"SELECT * FROM `Lock` WHERE `url`='$url'") or die(mysqli_error($con));
+	if(mysqli_num_rows($result)>0){
+		$row = mysqli_fetch_array($result);
 		$email = $row['email'];	
 		$prefix = substr($row['url'],0,3);	//use prefix to decide what needs to be confirmed
 		if($row['need_confirm']==1){
 			switch($prefix){
 				case "UPD"://update
-					mysql_update($email,"do",$con);
-					mysql_time($email,$con);
+					mysqli_update($email,"do",$con);
+					mysqli_time($email,$con);
 					say("Lock update successful!");
 					say("Please close this tab now.");
 					break;
 				case "REG"://register
-					mysql_update($email,"do",$con);
-					mysql_time($email,$con);
+					mysqli_update($email,"do",$con);
+					mysqli_time($email,$con);
 					say("Lock posting successful!");
 					say("Please close this tab now.");
 					break;
 				case "DEL"://delete
-					mysql_query("DELETE FROM `Lock` WHERE `email`='$email'",$con) or die(mysql_error($con));
+					mysqli_query($con,"DELETE FROM `Lock` WHERE `email`='$email'") or die(mysqli_error($con));
 					say("Lock removal successful!");
 					say("Please close this tab now.");
 					break;					
 				case "REF"://refresh old lock
-					mysql_time($email,$con);
+					mysqli_time($email,$con);
 					say("Lock refresh successful!");
 					say("Please close this tab now.");
 					break;
@@ -221,7 +220,7 @@ function handleConfirm($con){
 					antiRobotError($con);
 					break;
 			}
-		mysql_query("UPDATE `Lock` SET `need_confirm` = 0 WHERE `email`='$email'",$con) or die(mysql_error($con));			
+		mysqli_query($con,"UPDATE `Lock` SET `need_confirm` = 0 WHERE `email`='$email'") or die(mysqli_error($con));		
 		}else{
 			say("You do not need to confirm!");
 			antiRobotError($con);	
@@ -265,13 +264,13 @@ function sendEmail($email,$url,$lock){
 	
 	// Additional headers
 	
-	mail($to, $subject, $message, $headers) or die("Can not send email");		
+	mail($to, $subject, $message, $headers) or die("Cannot send email");		
 }
 
 function is_exist($email,$con){
-	$result = mysql_query("SELECT * FROM  `Lock` WHERE `email`='$email'",$con) or die(mysql_error($con));
-	if(mysql_num_rows($result)>0){
-		$row=mysql_fetch_array($result);
+	$result = mysqli_query($con,"SELECT * FROM  `Lock` WHERE `email`='$email'") or die(mysqli_error($con));
+	if(mysqli_num_rows($result)>0){
+		$row=mysqli_fetch_array($result);
 		if($row['is_activite']==0){
 			return false;	
 		}else{
@@ -286,19 +285,21 @@ function back(){
 	echo "<a href='index.html'>Return</a>";	
 }
 
-function mysql_update($email,$type,$con,$lock=''){
+function mysqli_update($email,$type,$con,$lock=''){
 	if($type=="now")
-		mysql_query("UPDATE `Lock` SET `lock`='$lock',`is_activite`=1, `date`=CURRENT_TIMESTAMP WHERE `email`='$email'",$con) or die(mysql_error($con));
+		mysqli_query($con,"UPDATE `Lock` SET `lock`='$lock',`is_activite`=1, `date`=CURRENT_TIMESTAMP WHERE `email`='$email'") or die(mysqli_error($con));
 	else if($type=="after")
-		mysql_query("UPDATE `Lock` SET `future_lock`='$lock',`is_activite`=1 WHERE `email`='$email'",$con) or die(mysql_error($con));
-	else if($type=="do")
-		mysql_query("UPDATE `Lock` SET `lock`=`future_lock`, `is_activite`=1, `date`=CURRENT_TIMESTAMP WHERE`email`='$email'",$con) or die(mysql_error($con));
+		mysqli_query($con,"UPDATE `Lock` SET `future_lock`='$lock',`is_activite`=1 WHERE `email`='$email'") or die(mysqli_error($con));
+	else if($type=="do"){
+		mysqli_query($con,"UPDATE `Lock` SET `lock`=`future_lock`, `is_activite`=1, `date`=CURRENT_TIMESTAMP WHERE`email`='$email'") or die(mysqli_error($con));
+		mysqli_query($con,"UPDATE `Lock` SET `future_lock`='' WHERE`email`='$email'") or die(mysqli_error($con));
+	}
 	else
-		die("Wrong uupdate type=".$type);
+		die("Wrong update type=".$type);
 }
 
-function mysql_time($email,$con){
-	mysql_query("UPDATE `Lock` SET `date`=CURRENT_TIMESTAMP WHERE `email`='$email'") or die(mysql_error($con));	
+function mysqli_time($email,$con){
+	mysqli_query($con,"UPDATE `Lock` SET `date`=CURRENT_TIMESTAMP WHERE `email`='$email'") or die(mysqli_error($con));	
 }
 
 function say($something){
@@ -313,9 +314,9 @@ function antiRobotCheck($con){
     $ip = $_SERVER['REMOTE_ADDR'];
 }
 
-	$result = mysql_query("SELECT * FROM `AntiRobot` WHERE `ip`='$ip'",$con);
+	$result = mysqli_query($con,"SELECT * FROM `AntiRobot` WHERE `ip`='$ip'");
 	
-	$row = mysql_fetch_array($result);
+	$row = mysqli_fetch_array($result);
 	if($row)
 		if($row['isBanned']==1){
 			die($ip." was Banned due to suspicious behavior on ".date(time()).",<br>");	
@@ -331,27 +332,27 @@ function antiRobotError($con){
 }
 
 	
-	$result = mysql_query("SELECT * FROM `AntiRobot` WHERE `ip`='$ip'",$con);
+	$result = mysqli_query($con,"SELECT * FROM `AntiRobot` WHERE `ip`='$ip'");
 	
-	$row = mysql_fetch_array($result);
+	$row = mysqli_fetch_array($result);
 	
 	if($row){
 		$time = time();
 		$interval = $time-$row['date'];
-		mysql_query("UPDATE `AntiRobot` SET `errorCount` = `errorCount` + 1 WHERE `ip`='$ip'",$con);
+		mysqli_query($con,"UPDATE `AntiRobot` SET `errorCount` = `errorCount` + 1 WHERE `ip`='$ip'");
 		if($interval>ANTIBOT_TEST_INTERVAL){
-			mysql_query("UPDATE `AntiRobot` SET `errorCount` = 1 , `date`= '$time' WHERE `ip`='$ip'",$con);
+			mysqli_query($con,"UPDATE `AntiRobot` SET `errorCount` = 1 , `date`= '$time' WHERE `ip`='$ip'");
 			
 		}else{
 			$errorPerInterval = $row['errorCount']+1;
 			if($errorPerInterval>ANTIBOT_MAX_ERROR_COUNT){
-				mysql_query("UPDATE `AntiRobot` SET `isBanned`=1 WHERE `ip`='$ip' ");
+				mysqli_query($con,"UPDATE `AntiRobot` SET `isBanned`=1 WHERE `ip`='$ip' ");
 				die($ip." was Banned due to suspicious behavior at ".time().",<br>");	
 			}
 		}
 	}else{
 		$time = time();
-		mysql_query("
+		mysqli_query($con,"
 		INSERT INTO `AntiRobot`(
 		`ip`,
 		`errorCount`,
@@ -361,7 +362,7 @@ function antiRobotError($con){
 		VALUES(
 		'$ip',1,'$time',0
 		);
-		",$con) or die(mysql_error($con));
+		") or die(mysqli_error($con));
 	}
 	
 	
@@ -383,7 +384,7 @@ function antiRobotError($con){
  * (Symphony's is probably faster than my hack)
  */
  
-function xss_clean($data)
+function xss_clean($con,$data)
 {
         // Fix &entity\n;
         $data = str_replace(array('&amp;','&lt;','&gt;'), array('&amp;amp;','&amp;lt;','&amp;gt;'), $data);
@@ -393,20 +394,20 @@ function xss_clean($data)
  
         // Remove any attribute starting with "on" or xmlns
         $data = preg_replace('#(<[^>]+?[\x00-\x20"\'])(?:on|xmlns)[^>]*+>#iu', '$1>', $data);
- 
+
         // Remove javascript: and vbscript: protocols
         $data = preg_replace('#([a-z]*)[\x00-\x20]*=[\x00-\x20]*([`\'"]*)[\x00-\x20]*j[\x00-\x20]*a[\x00-\x20]*v[\x00-\x20]*a[\x00-\x20]*s[\x00-\x20]*c[\x00-\x20]*r[\x00-\x20]*i[\x00-\x20]*p[\x00-\x20]*t[\x00-\x20]*:#iu', '$1=$2nojavascript...', $data);
         $data = preg_replace('#([a-z]*)[\x00-\x20]*=([\'"]*)[\x00-\x20]*v[\x00-\x20]*b[\x00-\x20]*s[\x00-\x20]*c[\x00-\x20]*r[\x00-\x20]*i[\x00-\x20]*p[\x00-\x20]*t[\x00-\x20]*:#iu', '$1=$2novbscript...', $data);
         $data = preg_replace('#([a-z]*)[\x00-\x20]*=([\'"]*)[\x00-\x20]*-moz-binding[\x00-\x20]*:#u', '$1=$2nomozbinding...', $data);
- 
+
         // Only works in IE: <span style="width: expression(alert('Ping!'));"></span>
         $data = preg_replace('#(<[^>]+?)style[\x00-\x20]*=[\x00-\x20]*[`\'"]*.*?expression[\x00-\x20]*\([^>]*+>#i', '$1>', $data);
         $data = preg_replace('#(<[^>]+?)style[\x00-\x20]*=[\x00-\x20]*[`\'"]*.*?behaviour[\x00-\x20]*\([^>]*+>#i', '$1>', $data);
         $data = preg_replace('#(<[^>]+?)style[\x00-\x20]*=[\x00-\x20]*[`\'"]*.*?s[\x00-\x20]*c[\x00-\x20]*r[\x00-\x20]*i[\x00-\x20]*p[\x00-\x20]*t[\x00-\x20]*:*[^>]*+>#iu', '$1>', $data);
- 
+
         // Remove namespaced elements (we do not need them)
         $data = preg_replace('#</*\w+:\w[^>]*+>#i', '', $data);
- 
+
         do
         {
                 // Remove really unwanted tags
@@ -414,9 +415,9 @@ function xss_clean($data)
                 $data = preg_replace('#</*(?:applet|b(?:ase|gsound|link)|embed|frame(?:set)?|i(?:frame|layer)|l(?:ayer|ink)|meta|object|s(?:cript|tyle)|title|xml)[^>]*+>#i', '', $data);
         }
         while ($old_data !== $data);
- 
+
         // we are done... but I added a SQL injection filter here.
-        return mysql_real_escape_string($data);
+        return mysqli_real_escape_string($con,$data);
 }
 ?>
 
